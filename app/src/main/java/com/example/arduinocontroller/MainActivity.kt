@@ -4,6 +4,7 @@ import android.Manifest
 import android.bluetooth.*
 import android.bluetooth.le.*
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import android.view.ContextThemeWrapper
@@ -14,6 +15,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import com.example.arduinocontroller.ble.BLEManager
 import com.example.arduinocontroller.databinding.ActivityMainBinding
@@ -31,6 +34,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        checkPermissions()
 
         viewModel = ViewModelProvider(this)[MainActivityView::class.java]
 
@@ -81,4 +86,23 @@ class MainActivity : AppCompatActivity() {
 
         devicesListLayout.addView(rowLayout)
     }
+
+    private val REQUEST_CODE_BLUETOOTH = 1001
+
+    private fun checkPermissions() {
+        val requiredPermissions = mutableListOf(
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
+
+        val permissionsToRequest = requiredPermissions.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (permissionsToRequest.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, permissionsToRequest.toTypedArray(), REQUEST_CODE_BLUETOOTH)
+        }
+    }
+
 }
