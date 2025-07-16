@@ -11,8 +11,10 @@ import android.view.Gravity
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
 import com.example.arduinocontroller.ble.BLEManager
 import com.example.arduinocontroller.databinding.ActivityMainBinding
 
@@ -22,6 +24,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var bleManager: BLEManager
+    private lateinit var viewModel: MainActivityView
 
     @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN])
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,29 +32,27 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        bleManager = BLEManager()
-        var devicesList: MutableList<BluetoothDevice> = mutableListOf()
+        viewModel = ViewModelProvider(this)[MainActivityView::class.java]
+
         val devicesListLayout: LinearLayout = binding.devicesList
-        devicesListLayout.removeAllViews()
 
-        bleManager.init(applicationContext)
+        binding.refreshButton.setOnClickListener {
+            viewModel.refreshBleDevices(this)
+        }
 
-        bleManager.startScan { device ->
-            Log.d("MainActivity", "Device found: ${device.name} - ${device.address}")
-            Log.d("MainActivity", devicesList.toString())
-            if (!devicesList.contains(device)) {
-                devicesList.add(device)
-                // Add the device to the UI
+        viewModel.bleDevices.observe(this) {
+            Log.d("MainActivityObserver", "Devices list updated: ${it.size} devices found")
+            devicesListLayout.removeAllViews()
+            for (device in it) {
                 addDeviceToView(devicesListLayout, device)
-                Log.d("MainActivity", "Device found: ${device.name} - ${device.address}")
-            } else {
-                Log.d("MainActivity", "Device already in list: ${device.name} - ${device.address}")
             }
         }
+
+        viewModel.refreshBleDevices(this)
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-    private fun addDeviceToView(devicesListLayout: LinearLayout, device : BluetoothDevice) {
+    private fun addDeviceToView(devicesListLayout: LinearLayout, device: BluetoothDevice) {
         val rowLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutParams = LinearLayout.LayoutParams(

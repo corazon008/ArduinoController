@@ -4,23 +4,25 @@ import android.Manifest
 import android.bluetooth.BluetoothDevice
 import android.os.Bundle
 import android.util.Log
-import android.widget.Button
+import android.widget.ImageButton
+import android.widget.SeekBar
+import android.widget.SeekBar.OnSeekBarChangeListener
+import android.widget.Toast
 import android.widget.VideoView
 import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
 import com.example.arduinocontroller.ble.BLEManager
 import com.example.arduinocontroller.databinding.ActivityControllerBinding
-import com.example.arduinocontroller.websocket.WebSocketHandler
+
 
 class ControllerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityControllerBinding
     private lateinit var bleManager: BLEManager
-    private lateinit var videoView: VideoView
-    private lateinit var leftButton: Button
-    private lateinit var rightButton: Button
-    private lateinit var forwardButton: Button
-    private lateinit var backwardButton: Button
-    private lateinit var stopButton: Button
+    private lateinit var leftButton: ImageButton
+    private lateinit var rightButton: ImageButton
+    private lateinit var forwardButton: ImageButton
+    private lateinit var backwardButton: ImageButton
+    private lateinit var stopButton: ImageButton
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,30 +42,46 @@ class ControllerActivity : AppCompatActivity() {
         bleManager.init(applicationContext)
         bleManager.connectToDevice(device)
 
-        videoView = binding.videoView
         leftButton = binding.left
         rightButton = binding.right
         forwardButton = binding.forward
         backwardButton = binding.backward
-        //stopButton = binding.stop
+        stopButton = binding.stop
 
-        leftButton.setOnClickListener {
+        forwardButton.setOnClickListener {
             sendCommand(1)
         }
-        rightButton.setOnClickListener {
+        backwardButton.setOnClickListener {
             sendCommand(2)
         }
-        forwardButton.setOnClickListener {
+        leftButton.setOnClickListener {
             sendCommand(3)
         }
-        backwardButton.setOnClickListener {
+        rightButton.setOnClickListener {
             sendCommand(4)
         }
 
-        // Uncomment if you want to implement the stop button
-        // stopButton.setOnClickListener {
-        //     sendCommand("stop")
-        // }
+        stopButton.setOnClickListener {
+             sendCommand(5)
+        }
+
+        binding.speedSeekBar.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                // TODO Auto-generated method stub
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                // TODO Auto-generated method stub
+            }
+
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                // TODO Auto-generated method stub
+val speed = progress * 255 / 100
+                binding.speedTextView.text = speed.toString()
+                bleManager.writeSpeed(speed.toByte())
+            }
+        });
 
         // Initialize video streaming if needed
         //initializeVideoStreaming()
@@ -72,7 +90,7 @@ class ControllerActivity : AppCompatActivity() {
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     private fun sendCommand(b: Byte) {
         Log.d("ControllerActivity", "Sending command: ${b}")
-        bleManager.writeLedColor(b)
+        bleManager.writeMovement(b)
     }
 
     override fun onDestroy() {
